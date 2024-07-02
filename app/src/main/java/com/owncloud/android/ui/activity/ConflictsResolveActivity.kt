@@ -2,7 +2,7 @@
  * Nextcloud - Android Client
  *
  * SPDX-FileCopyrightText: 2024 Jonas Mayer <jonas.a.mayer@gmx.net>
- * SPDX-FileCopyrightText: 2024 Alper Ozturk <alper_ozturk@proton.me>
+ * SPDX-FileCopyrightText: 2024 Alper Ozturk <alper.ozturk@nextcloud.com>
  * SPDX-FileCopyrightText: 2019 Alice Gaudon <alice@gaudon.pro>
  * SPDX-FileCopyrightText: 2012 Bartosz Przybylski <bart.p.pl@gmail.com>
  * SPDX-License-Identifier: GPL-2.0-only AND (AGPL-3.0-or-later OR GPL-2.0-only)
@@ -20,6 +20,7 @@ import com.nextcloud.client.jobs.upload.FileUploadWorker
 import com.nextcloud.client.jobs.upload.UploadNotificationManager
 import com.nextcloud.model.HTTPStatusCodes
 import com.nextcloud.utils.extensions.getParcelableArgument
+import com.nextcloud.utils.extensions.logFileSize
 import com.owncloud.android.R
 import com.owncloud.android.datamodel.FileDataStorageManager
 import com.owncloud.android.datamodel.OCFile
@@ -143,6 +144,7 @@ class ConflictsResolveActivity : FileActivity(), OnConflictDecisionMadeListener 
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        existingFile.logFileSize(TAG)
         outState.putLong(EXTRA_CONFLICT_UPLOAD_ID, conflictUploadId)
         outState.putParcelable(EXTRA_EXISTING_FILE, existingFile)
         outState.putInt(EXTRA_LOCAL_BEHAVIOUR, localBehaviour)
@@ -254,13 +256,7 @@ class ConflictsResolveActivity : FileActivity(), OnConflictDecisionMadeListener 
         private val TAG = ConflictsResolveActivity::class.java.simpleName
 
         @JvmStatic
-        fun createIntent(
-            file: OCFile?,
-            user: User?,
-            conflictUploadId: Long,
-            flag: Int?,
-            context: Context?
-        ): Intent {
+        fun createIntent(file: OCFile?, user: User?, conflictUploadId: Long, flag: Int?, context: Context?): Intent {
             val intent = Intent(context, ConflictsResolveActivity::class.java)
             if (flag != null) {
                 intent.flags = intent.flags or flag

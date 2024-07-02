@@ -1,7 +1,7 @@
 /*
  * Nextcloud - Android Client
  *
- * SPDX-FileCopyrightText: 2023 Alper Ozturk <alper_ozturk@proton.me>
+ * SPDX-FileCopyrightText: 2023 Alper Ozturk <alper.ozturk@nextcloud.com>
  * SPDX-FileCopyrightText: 2022 Álvaro Brey Vilas <alvaro@alvarobrey.com>
  * SPDX-FileCopyrightText: 2018-2020 Tobias Kaminsky <tobias@kaminsky.me>
  * SPDX-FileCopyrightText: 2019 Chris Narkiewicz <hello@ezaquarii.com>
@@ -227,10 +227,20 @@ class MediaControlView(context: Context, attrs: AttributeSet?) :
             context,
             if (playerControl?.isPlaying == true) {
                 R.drawable.ic_pause
-            } else { R.drawable.ic_play }
+            } else {
+                R.drawable.ic_play
+            }
         )
-        binding.forwardBtn.visibility = if (playerControl?.canSeekForward() == true) { VISIBLE } else { INVISIBLE }
-        binding.rewindBtn.visibility = if (playerControl?.canSeekBackward() == true) { VISIBLE } else { INVISIBLE }
+        binding.forwardBtn.visibility = if (playerControl?.canSeekForward() == true) {
+            VISIBLE
+        } else {
+            INVISIBLE
+        }
+        binding.rewindBtn.visibility = if (playerControl?.canSeekBackward() == true) {
+            VISIBLE
+        } else {
+            INVISIBLE
+        }
     }
 
     private fun doPauseResume() {

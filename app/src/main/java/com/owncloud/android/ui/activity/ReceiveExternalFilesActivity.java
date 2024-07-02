@@ -52,6 +52,7 @@ import com.nextcloud.client.jobs.upload.FileUploadHelper;
 import com.nextcloud.client.jobs.upload.FileUploadWorker;
 import com.nextcloud.client.preferences.AppPreferences;
 import com.nextcloud.utils.extensions.BundleExtensionsKt;
+import com.nextcloud.utils.extensions.FileExtensionsKt;
 import com.nextcloud.utils.extensions.IntentExtensionsKt;
 import com.owncloud.android.MainApp;
 import com.owncloud.android.R;
@@ -264,7 +265,7 @@ public class ReceiveExternalFilesActivity extends FileActivity
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
-        Log_OC.d(TAG, "onSaveInstanceState() start");
+        FileExtensionsKt.logFileSize(mFile, TAG);
         super.onSaveInstanceState(outState);
         outState.putString(KEY_PARENTS, generatePath(mParents));
         outState.putParcelable(KEY_FILE, mFile);
@@ -804,7 +805,8 @@ public class ReceiveExternalFilesActivity extends FileActivity
 
     private void startSyncFolderOperation(OCFile folder) {
         if (folder == null) {
-            throw new IllegalArgumentException("Folder must not be null");
+            DisplayUtils.showSnackMessage(this, R.string.receive_external_files_activity_start_sync_folder_is_not_exists_message);
+            return;
         }
 
         long currentSyncTime = System.currentTimeMillis();

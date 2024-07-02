@@ -1,7 +1,7 @@
 /*
  * Nextcloud - Android Client
  *
- * SPDX-FileCopyrightText: 2024 Your Name <your@email.com>
+ * SPDX-FileCopyrightText: 2024 Alper Ozturk <alper.ozturk@nextcloud.com>
  * SPDX-License-Identifier: AGPL-3.0-or-later OR GPL-2.0-only
  */
 package com.nextcloud.client.assistant.task
@@ -41,10 +41,7 @@ import com.owncloud.android.lib.resources.assistant.model.Task
 @OptIn(ExperimentalFoundationApi::class)
 @Suppress("LongMethod", "MagicNumber")
 @Composable
-fun TaskView(
-    task: Task,
-    showDeleteTaskAlertDialog: (Long) -> Unit
-) {
+fun TaskView(task: Task, showDeleteTaskAlertDialog: (Long) -> Unit) {
     var showTaskDetailBottomSheet by remember { mutableStateOf(false) }
     var showMoreActionsBottomSheet by remember { mutableStateOf(false) }
 

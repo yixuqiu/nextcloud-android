@@ -1,7 +1,7 @@
 /*
  * Nextcloud - Android Client
  *
- * SPDX-FileCopyrightText: 2023 Alper Ozturk <alper_ozturk@proton.me>
+ * SPDX-FileCopyrightText: 2023 Alper Ozturk <alper.ozturk@nextcloud.com>
  * SPDX-FileCopyrightText: 2015 ownCloud Inc.
  * SPDX-FileCopyrightText: 2011 Bartek Przybylski
  * SPDX-License-Identifier: GPL-2.0-only AND (AGPL-3.0-or-later OR GPL-2.0-only)
@@ -188,7 +188,7 @@ class PassCodeActivity : AppCompatActivity(), Injectable {
                     passCodeDigits?.set(passCodeIndex - 1, "")
                 }
 
-                passCodeEditTexts[passCodeIndex - 1]?.setText("")
+                passCodeEditTexts[passCodeIndex - 1]?.setText(R.string.empty)
 
                 changed = false
             } else if (!changed) {

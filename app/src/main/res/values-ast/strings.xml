@@ -21,6 +21,7 @@
     <string name="activity_icon">Actividá</string>
     <string name="add_another_public_share_link">Amestar otru enllaz</string>
     <string name="advanced_settings">Configuración avanzada</string>
+    <string name="app_config_proxy_port_title">Puertu del proxy</string>
     <string name="appbar_search_in">Buscar en: %s</string>
     <string name="assistant_screen_all_task_type">Too</string>
     <string name="assistant_screen_create_task_alert_dialog_input_field_placeholder">Escribi daqué</string>
@@ -101,7 +102,11 @@
     <string name="copy_link">Copiar enllaz</string>
     <string name="create">Crear</string>
     <string name="create_dir_fail_msg">Nun pudo crease la carpeta</string>
-    <string name="create_new_folder">Crear una carpeta</string>
+    <string name="create_new">Nuevu</string>
+    <string name="create_new_document">Documentu nuevu</string>
+    <string name="create_new_folder">Carpeta nueva</string>
+    <string name="create_new_presentation">Presentación nueva</string>
+    <string name="create_new_spreadsheet">Fueya de cálculu nueva</string>
     <string name="delete_account">Desaniciar cuenta</string>
     <string name="dev_version_no_information_available">Nun hai nenguna información disponible</string>
     <string name="dev_version_no_new_version_available">Nun hai nengún anovamientu disponible.</string>
@@ -569,6 +574,7 @@
     <string name="upload_action_global_upload_pause">Posar toles descargues</string>
     <string name="upload_action_global_upload_resume">Siguir con toles descargues</string>
     <string name="upload_cannot_create_file">Nun se pue crear el ficheru llocal</string>
+    <string name="upload_direct_camera_video">Videu</string>
     <string name="upload_file_dialog_filename">Nome de ficheru</string>
     <string name="upload_file_dialog_filetype">Triba de ficheru</string>
     <string name="upload_global_pause_title">Toles descargues tán posaes</string>

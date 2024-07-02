@@ -324,8 +324,8 @@ public class RefreshFolderOperation extends RemoteOperation {
     }
 
     private void updateDirectEditing(ArbitraryDataProvider arbitraryDataProvider, String newDirectEditingEtag) {
-        RemoteOperationResult<DirectEditing> result = new DirectEditingObtainRemoteOperation().execute(user,
-                                                                                                       mContext);
+        RemoteOperationResult<DirectEditing> result =
+            new DirectEditingObtainRemoteOperation().executeNextcloudClient(user, mContext);
 
         if (result.isSuccess()) {
             DirectEditing directEditing = result.getResultData();
@@ -452,6 +452,11 @@ public class RefreshFolderOperation extends RemoteOperation {
     private void synchronizeData(List<Object> folderAndFiles) {
         // get 'fresh data' from the database
         mLocalFolder = mStorageManager.getFileByPath(mLocalFolder.getRemotePath());
+
+        if (mLocalFolder == null) {
+            Log_OC.d(TAG,"mLocalFolder cannot be null");
+            return;
+        }
 
         // parse data from remote folder
         OCFile remoteFolder = FileStorageUtils.fillOCFile((RemoteFile) folderAndFiles.get(0));

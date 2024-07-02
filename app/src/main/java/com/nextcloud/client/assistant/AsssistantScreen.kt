@@ -1,7 +1,7 @@
 /*
  * Nextcloud - Android Client
  *
- * SPDX-FileCopyrightText: 2024 Alper Ozturk <alper_ozturk@proton.me>
+ * SPDX-FileCopyrightText: 2024 Alper Ozturk <alper.ozturk@nextcloud.com>
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH
  * SPDX-License-Identifier: AGPL-3.0-or-later OR GPL-2.0-only
  */
@@ -151,11 +151,7 @@ fun AssistantScreen(viewModel: AssistantViewModel, activity: Activity) {
 }
 
 @Composable
-private fun ScreenState(
-    state: AssistantViewModel.State,
-    activity: Activity,
-    viewModel: AssistantViewModel
-) {
+private fun ScreenState(state: AssistantViewModel.State, activity: Activity, viewModel: AssistantViewModel) {
     val messageId: Int? = when (state) {
         is AssistantViewModel.State.Error -> {
             state.messageId

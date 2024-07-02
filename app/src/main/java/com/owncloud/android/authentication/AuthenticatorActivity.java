@@ -21,6 +21,7 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.RestrictionsManager;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -34,21 +35,15 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.AndroidRuntimeException;
-import android.util.DisplayMetrics;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
-import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
@@ -83,6 +78,7 @@ import com.owncloud.android.lib.common.OwnCloudClientManagerFactory;
 import com.owncloud.android.lib.common.OwnCloudCredentials;
 import com.owncloud.android.lib.common.OwnCloudCredentialsFactory;
 import com.owncloud.android.lib.common.UserInfo;
+import com.owncloud.android.lib.common.accounts.AccountUtils;
 import com.owncloud.android.lib.common.accounts.AccountUtils.AccountNotFoundException;
 import com.owncloud.android.lib.common.accounts.AccountUtils.Constants;
 import com.owncloud.android.lib.common.network.CertificateCombinedException;
@@ -111,6 +107,7 @@ import com.owncloud.android.utils.DisplayUtils;
 import com.owncloud.android.utils.ErrorMessageAdapter;
 import com.owncloud.android.utils.PermissionUtil;
 import com.owncloud.android.utils.WebViewUtil;
+import com.owncloud.android.utils.appConfig.AppConfigManager;
 import com.owncloud.android.utils.theme.CapabilityUtils;
 import com.owncloud.android.utils.theme.ViewThemeUtils;
 
@@ -140,6 +137,9 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleEventObserver;
+import androidx.lifecycle.ProcessLifecycleOwner;
 import de.cotech.hw.fido.WebViewFidoBridge;
 import de.cotech.hw.fido.ui.FidoDialogOptions;
 import de.cotech.hw.fido2.WebViewWebauthnBridge;
@@ -202,7 +202,6 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
 
     public static final int NO_ICON = 0;
     public static final String EMPTY_STRING = "";
-
     public static final int REQUEST_CODE_FIRST_RUN = 102;
 
     /// parameters from EXTRAs in starter Intent
@@ -318,9 +317,18 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
             mIsFirstAuthAttempt = savedInstanceState.getBoolean(KEY_AUTH_IS_FIRST_ATTEMPT_TAG);
         }
 
-        String webloginUrl = null;
         boolean webViewLoginMethod;
-        if (getIntent().getBooleanExtra(EXTRA_USE_PROVIDER_AS_WEBLOGIN, false)) {
+        String webloginUrl = null;
+
+        if (MainApp.isClientBrandedPlus()) {
+            RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
+            AppConfigManager appConfigManager = new AppConfigManager(this, restrictionsManager.getApplicationRestrictions());
+            webloginUrl = appConfigManager.getBaseUrl(MainApp.isClientBrandedPlus());
+        }
+
+        if (webloginUrl != null) {
+            webViewLoginMethod = true;
+        } else if (getIntent().getBooleanExtra(EXTRA_USE_PROVIDER_AS_WEBLOGIN, false)) {
             webViewLoginMethod = true;
             webloginUrl = getString(R.string.provider_registration_server);
         } else {
@@ -348,9 +356,17 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
         }
 
         initServerPreFragment(savedInstanceState);
+        ProcessLifecycleOwner.get().getLifecycle().addObserver(lifecycleEventObserver);
 
         // webViewUtil.checkWebViewVersion();
     }
+
+    private final LifecycleEventObserver lifecycleEventObserver = ((lifecycleOwner, event) -> {
+        if (event == Lifecycle.Event.ON_START && token != null) {
+            Log_OC.d(TAG, "Start poolLogin");
+            poolLogin(clientFactory.createPlainClient());
+        }
+    });
 
     private void deleteCookies() {
         try {
@@ -371,37 +387,49 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
      * @param url The URL where the login request is to be anonymously posted.
      *            This URL should handle the login request and return the login URL.
      *            It's typically the entry point for the login process.
-     *            Example: "https://example.com/index.php/login/v2"
+     *            Example: "<a href="https://example.com/index.php/login/v2">...</a>"
      */
     private void anonymouslyPostLoginRequest(String url) {
         baseUrl = url;
 
         Thread thread = new Thread(() -> {
-            PostMethod post = new PostMethod(baseUrl, false, new FormBody.Builder().build());
+            String response = getResponseOfAnonymouslyPostLoginRequest();
 
-            PlainClient client = clientFactory.createPlainClient();
-            post.execute(client);
-            String response = post.getResponseBodyAsString();
-            JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
-            String login = jsonObject.get("login").getAsString();
-            if (login == null) {
-                login = getResources().getString(R.string.webview_login_url);
+            try {
+                JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
+                String loginUrl = getLoginUrl(jsonObject);
+                runOnUiThread(() -> launchDefaultWebBrowser(loginUrl));
+                token = jsonObject.getAsJsonObject("poll").get("token").getAsString();
+            } catch (Throwable t) {
+                Log_OC.d(TAG, "Error caught at anonymouslyPostLoginRequest: " + t);
+                DisplayUtils.showSnackMessage(this, R.string.authenticator_activity_login_error);
             }
-
-            String loginUrl = login;
-            runOnUiThread(() -> {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(loginUrl));
-                loginFlowResultLauncher.launch(intent);
-            });
-
-            token = jsonObject.getAsJsonObject("poll").get("token").getAsString();
         });
 
         thread.start();
     }
 
-    private final ActivityResultLauncher<Intent> loginFlowResultLauncher = registerForActivityResult(
-        new ActivityResultContracts.StartActivityForResult(), result -> poolLogin(clientFactory.createPlainClient()));
+    private String getResponseOfAnonymouslyPostLoginRequest() {
+        PostMethod post = new PostMethod(baseUrl, false, new FormBody.Builder().build());
+        PlainClient client = clientFactory.createPlainClient();
+        post.execute(client);
+        return post.getResponseBodyAsString();
+    }
+
+    private String getLoginUrl(JsonObject response) {
+        String result = response.get("login").getAsString();
+        if (result == null) {
+            result = getResources().getString(R.string.webview_login_url);
+        }
+
+        return result;
+    }
+
+    private void launchDefaultWebBrowser(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
 
     private static String getWebLoginUserAgent() {
         return Build.MANUFACTURER.substring(0, 1).toUpperCase(Locale.getDefault()) +
@@ -816,6 +844,8 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
             mOperationsServiceBinder = null;
         }
 
+        Log_OC.d(TAG, "AuthenticatorActivity onDestroy called");
+
         super.onDestroy();
     }
 
@@ -1027,6 +1057,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
 
         cancelButton.setOnClickListener(v -> {
             loginFlowExecutorService.shutdown();
+            ProcessLifecycleOwner.get().getLifecycle().removeObserver(lifecycleEventObserver);
             recreate();
         });
     }
@@ -1375,7 +1406,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
         // can be anything: email, name, name with whitespaces
         String loginName = webViewUser;
 
-        String accountName = com.owncloud.android.lib.common.accounts.AccountUtils.buildAccountName(uri, loginName);
+        String accountName = AccountUtils.buildAccountName(uri, loginName);
         Account newAccount = new Account(accountName, accountType);
         if (accountManager.exists(newAccount)) {
             // fail - not a new account, but an existing one; disallow
@@ -1480,7 +1511,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
-        if (requestCode == PermissionUtil.PERMISSIONS_CAMERA) {// If request is cancelled, result arrays are empty.
+        if (requestCode == PERMISSIONS_CAMERA) {// If request is cancelled, result arrays are empty.
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // permission was granted
                 startQRScanner();
@@ -1561,12 +1592,9 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
         }
     }
 
-
     private void dismissWaitingDialog() {
         Fragment frag = getSupportFragmentManager().findFragmentByTag(WAIT_DIALOG_TAG);
-        if (frag instanceof DialogFragment) {
-            DialogFragment dialog = (DialogFragment) frag;
-
+        if (frag instanceof DialogFragment dialog) {
             try {
                 dialog.dismiss();
             } catch (IllegalStateException e) {
@@ -1626,7 +1654,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
     private boolean isRedirectedToTheDefaultBrowser = false;
 
     private void poolLogin(PlainClient client) {
-        loginFlowExecutorService.scheduleAtFixedRate(() -> {
+        loginFlowExecutorService.scheduleWithFixedDelay(() -> {
             if (!isLoginProcessCompleted) {
                 performLoginFlowV2(client);
             }
@@ -1682,6 +1710,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity
 
         checkOcServer();
         loginFlowExecutorService.shutdown();
+        ProcessLifecycleOwner.get().getLifecycle().removeObserver(lifecycleEventObserver);
     }
 
     /**

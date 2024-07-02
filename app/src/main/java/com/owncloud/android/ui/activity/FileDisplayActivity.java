@@ -1,7 +1,7 @@
 /*
  * Nextcloud - Android Client
  *
- * SPDX-FileCopyrightText: 2023 TSI-mc
+ * SPDX-FileCopyrightText: 2023-2024 TSI-mc <surinder.kumar@t-systems.com>
  * SPDX-FileCopyrightText: 2023 Archontis E. Kostis <arxontisk02@gmail.com>
  * SPDX-FileCopyrightText: 2019 Chris Narkiewicz <hello@ezaquarii.com>
  * SPDX-FileCopyrightText: 2018-2022 Tobias Kaminsky <tobias@kaminsky.me>
@@ -13,6 +13,7 @@
  */
 package com.owncloud.android.ui.activity;
 
+import android.accounts.Account;
 import android.accounts.AuthenticatorException;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -31,7 +32,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Parcelable;
 import android.text.TextUtils;
 import android.view.Menu;
@@ -61,7 +64,9 @@ import com.nextcloud.client.preferences.AppPreferences;
 import com.nextcloud.client.utils.IntentUtil;
 import com.nextcloud.model.WorkerState;
 import com.nextcloud.model.WorkerStateLiveData;
+import com.nextcloud.utils.extensions.ActivityExtensionsKt;
 import com.nextcloud.utils.extensions.BundleExtensionsKt;
+import com.nextcloud.utils.extensions.FileExtensionsKt;
 import com.nextcloud.utils.extensions.IntentExtensionsKt;
 import com.nextcloud.utils.view.FastScrollUtils;
 import com.owncloud.android.MainApp;
@@ -194,6 +199,7 @@ public class FileDisplayActivity extends FileActivity
     public static final int REQUEST_CODE__SELECT_FILES_FROM_FILE_SYSTEM = REQUEST_CODE__LAST_SHARED + 2;
     public static final int REQUEST_CODE__MOVE_OR_COPY_FILES = REQUEST_CODE__LAST_SHARED + 3;
     public static final int REQUEST_CODE__UPLOAD_FROM_CAMERA = REQUEST_CODE__LAST_SHARED + 5;
+    public static final int REQUEST_CODE__UPLOAD_FROM_VIDEO_CAMERA = REQUEST_CODE__LAST_SHARED + 6;
 
     protected static final long DELAY_TO_REQUEST_REFRESH_OPERATION_LATER = DELAY_TO_REQUEST_OPERATIONS_LATER + 350;
 
@@ -443,7 +449,7 @@ public class FileDisplayActivity extends FileActivity
                 // If request is cancelled, result arrays are empty.
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // permission was granted
-                    getFileOperationsHelper().uploadFromCamera(this, FileDisplayActivity.REQUEST_CODE__UPLOAD_FROM_CAMERA);
+                    getOCFileListFragmentFromFile().directCameraUpload();
                 }
                 break;
             default:
@@ -597,15 +603,19 @@ public class FileDisplayActivity extends FileActivity
 
         showSortListGroup(showSortListGroup);
 
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.addToBackStack(null);
-        transaction.replace(R.id.left_fragment_container, fragment, TAG_LIST_OF_FILES);
-        transaction.commit();
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        if (ActivityExtensionsKt.isActive(this) && !fragmentManager.isDestroyed()) {
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.addToBackStack(null);
+            transaction.replace(R.id.left_fragment_container, fragment, TAG_LIST_OF_FILES);
+            transaction.commit();
+        }
     }
 
     private OCFileListFragment getOCFileListFragmentFromFile() {
         final Fragment leftFragment = getLeftFragment();
-        OCFileListFragment listOfFiles = null;
+        OCFileListFragment listOfFiles;
+
         if (leftFragment instanceof OCFileListFragment) {
             listOfFiles = (OCFileListFragment) leftFragment;
         } else {
@@ -613,11 +623,24 @@ public class FileDisplayActivity extends FileActivity
             Bundle args = new Bundle();
             args.putBoolean(OCFileListFragment.ARG_ALLOW_CONTEXTUAL_ACTIONS, true);
             listOfFiles.setArguments(args);
-            setLeftFragment(listOfFiles);
-            getSupportFragmentManager().executePendingTransactions();
+
+            FragmentManager fm = getSupportFragmentManager();
+            boolean isExecutingTransactions = !fm.isStateSaved() && !fm.executePendingTransactions();
+
+            if (isExecutingTransactions) {
+                setLeftFragment(listOfFiles);
+                fm.executePendingTransactions();
+            } else {
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    setLeftFragment(listOfFiles);
+                    fm.executePendingTransactions();
+                });
+            }
         }
+
         return listOfFiles;
     }
+
 
     public void showFileActions(OCFile file) {
         dismissLoadingDialog();
@@ -830,7 +853,7 @@ public class FileDisplayActivity extends FileActivity
 
             requestUploadOfFilesFromFileSystem(data, resultCode);
 
-        } else if (requestCode == REQUEST_CODE__UPLOAD_FROM_CAMERA && (resultCode == RESULT_OK || resultCode == UploadFilesActivity.RESULT_OK_AND_DELETE)) {
+        } else if ((requestCode == REQUEST_CODE__UPLOAD_FROM_CAMERA || requestCode == REQUEST_CODE__UPLOAD_FROM_VIDEO_CAMERA) && (resultCode == RESULT_OK || resultCode == UploadFilesActivity.RESULT_OK_AND_DELETE)) {
 
             new CheckAvailableSpaceTask(new CheckAvailableSpaceTask.CheckAvailableSpaceListener() {
                 @Override
@@ -844,17 +867,22 @@ public class FileDisplayActivity extends FileActivity
 
                     if (hasEnoughSpaceAvailable) {
                         File file = new File(filesToUpload[0]);
-                        File renamedFile = new File(file.getParent() + PATH_SEPARATOR + FileOperationsHelper.getCapturedImageName());
+                        File renamedFile;
+                        if(requestCode == REQUEST_CODE__UPLOAD_FROM_CAMERA) {
+                            renamedFile = new File(file.getParent() + PATH_SEPARATOR + FileOperationsHelper.getCapturedImageName());
+                        } else {
+                            renamedFile = new File(file.getParent() + PATH_SEPARATOR + FileOperationsHelper.getCapturedVideoName());
+                        }
 
                         if (!file.renameTo(renamedFile)) {
-                            DisplayUtils.showSnackMessage(getActivity(), "Fail to upload taken image!");
+                            DisplayUtils.showSnackMessage(getActivity(), R.string.error_uploading_direct_camera_upload);
                             return;
                         }
 
                         requestUploadOfFilesFromFileSystem(renamedFile.getParentFile().getAbsolutePath(), new String[]{renamedFile.getAbsolutePath()}, FileUploadWorker.LOCAL_BEHAVIOUR_DELETE);
                     }
                 }
-            }, new String[]{FileOperationsHelper.createImageFile(getActivity()).getAbsolutePath()}).execute();
+            }, new String[]{FileOperationsHelper.createCameraFile(getActivity(), requestCode == REQUEST_CODE__UPLOAD_FROM_VIDEO_CAMERA).getAbsolutePath()}).execute();
         } else if (requestCode == REQUEST_CODE__MOVE_OR_COPY_FILES && resultCode == RESULT_OK) {
             exitSelectionMode();
         } else if (requestCode == PermissionUtil.REQUEST_CODE_MANAGE_ALL_FILES) {
@@ -1040,8 +1068,8 @@ public class FileDisplayActivity extends FileActivity
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         // responsibility of restore is preferred in onCreate() before than in
         // onRestoreInstanceState when there are Fragments involved
-        Log_OC.v(TAG, "onSaveInstanceState() start");
         super.onSaveInstanceState(outState);
+        FileExtensionsKt.logFileSize(mWaitingToPreview, TAG);
         outState.putParcelable(FileDisplayActivity.KEY_WAITING_TO_PREVIEW, mWaitingToPreview);
         outState.putBoolean(FileDisplayActivity.KEY_SYNC_IN_PROGRESS, mSyncInProgress);
         // outState.putBoolean(FileDisplayActivity.KEY_REFRESH_SHARES_IN_PROGRESS,
@@ -1350,7 +1378,8 @@ public class FileDisplayActivity extends FileActivity
         public void onReceive(Context context, Intent intent) {
             String uploadedRemotePath = intent.getStringExtra(FileUploadWorker.EXTRA_REMOTE_PATH);
             String accountName = intent.getStringExtra(FileUploadWorker.ACCOUNT_NAME);
-            boolean sameAccount = getAccount() != null && accountName.equals(getAccount().name);
+            Account account = getAccount();
+            boolean sameAccount = accountName != null && account != null && accountName.equals(account.name);
             OCFile currentDir = getCurrentDir();
             boolean isDescendant = currentDir != null && uploadedRemotePath != null && uploadedRemotePath.startsWith(currentDir.getRemotePath());
 
@@ -2321,7 +2350,10 @@ public class FileDisplayActivity extends FileActivity
     }
 
     private void handleOpenFileViaIntent(Intent intent) {
-        showLoadingDialog(getString(R.string.retrieving_file));
+        Uri deepLinkUri = getIntent().getData();
+        if (deepLinkUri == null || !DeepLinkHandler.Companion.isDeepLinkTypeIsNavigation(deepLinkUri.toString())) {
+            showLoadingDialog(getString(R.string.retrieving_file));
+        }
 
         String userName = intent.getStringExtra(KEY_ACCOUNT);
         String fileId = intent.getStringExtra(KEY_FILE_ID);
@@ -2352,7 +2384,7 @@ public class FileDisplayActivity extends FileActivity
         DeepLinkHandler.Match match = linkHandler.parseDeepLink(uri);
         if (match == null) {
             dismissLoadingDialog();
-            DisplayUtils.showSnackMessage(this, getString(R.string.invalid_url));
+            handleDeepLink(uri);
         } else if (match.getUsers().isEmpty()) {
             dismissLoadingDialog();
             DisplayUtils.showSnackMessage(this, getString(R.string.associated_account_not_found));
