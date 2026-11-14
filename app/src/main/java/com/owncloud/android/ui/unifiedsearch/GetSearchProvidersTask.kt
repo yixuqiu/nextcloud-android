@@ -11,9 +11,7 @@ import com.nextcloud.common.NextcloudClient
 import com.owncloud.android.lib.common.SearchProviders
 import com.owncloud.android.lib.common.utils.Log_OC
 
-class GetSearchProvidersTask(
-    private val client: NextcloudClient
-) : () -> GetSearchProvidersTask.Result {
+class GetSearchProvidersTask(private val client: NextcloudClient) : () -> GetSearchProvidersTask.Result {
 
     companion object {
         const val TAG = "GetSearchProviders"
@@ -33,6 +31,7 @@ class GetSearchProvidersTask(
                     providers = result.resultData
                 )
             }
+
             else -> Result()
         }
     }

@@ -41,21 +41,21 @@ public class TextEditorLoadUrlTask extends AsyncTask<Void, Void, String> {
             return "";
         }
 
-        Editor editor = editorUtils.getEditor(user, file.getMimeType());
+        Editor editor = editorUtils.getAvailableEditor(user, file.getMimeType());
 
         if (editor == null) {
             return "";
         }
 
-        RemoteOperationResult result = new DirectEditingOpenFileRemoteOperation(file.getRemotePath(), editor.getId())
-            .execute(user, editorWebViewWeakReference.get());
+        RemoteOperationResult<String> result = new DirectEditingOpenFileRemoteOperation(file.getRemotePath(), editor.getId())
+            .executeNextcloudClient(user, editorWebView);
 
 
         if (!result.isSuccess()) {
             return "";
         }
 
-        return (String) result.getData().get(0);
+        return result.getResultData();
     }
 
     @Override

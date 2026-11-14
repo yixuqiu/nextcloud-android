@@ -7,7 +7,4 @@
  */
 package com.owncloud.android.datamodel.e2e.v2.decrypted
 
-data class DecryptedUser(
-    val userId: String,
-    val certificate: String
-)
+data class DecryptedUser(val userId: String, val certificate: String, var decryptedMetadataKey: String?)

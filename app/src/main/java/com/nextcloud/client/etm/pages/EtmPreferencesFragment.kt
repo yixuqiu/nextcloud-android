@@ -20,7 +20,7 @@ import com.owncloud.android.databinding.FragmentEtmPreferencesBinding
 
 class EtmPreferencesFragment : EtmBaseFragment() {
     private var _binding: FragmentEtmPreferencesBinding? = null
-    private val binding get() = _binding!!
+    val binding get() = _binding!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,14 +45,13 @@ class EtmPreferencesFragment : EtmBaseFragment() {
         inflater.inflate(R.menu.fragment_etm_preferences, menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.etm_preferences_share -> {
-                onClickedShare()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.etm_preferences_share -> {
+            onClickedShare()
+            true
         }
+
+        else -> super.onOptionsItemSelected(item)
     }
 
     private fun onClickedShare() {

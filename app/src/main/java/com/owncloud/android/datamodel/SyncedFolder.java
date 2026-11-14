@@ -10,9 +10,14 @@
 
 package com.owncloud.android.datamodel;
 
+import com.nextcloud.client.device.PowerManagementService;
+import com.nextcloud.client.network.ConnectivityService;
 import com.nextcloud.client.preferences.SubFolderRule;
+import com.nextcloud.utils.extensions.SyncedFolderExtensionsKt;
 import com.owncloud.android.files.services.NameCollisionPolicy;
+import com.owncloud.android.utils.MimeTypeUtil;
 
+import java.io.File;
 import java.io.Serializable;
 
 /**
@@ -103,7 +108,7 @@ public class SyncedFolder implements Serializable, Cloneable {
      *
      * @param id id
      */
-    protected SyncedFolder(long id,
+    public SyncedFolder(long id,
                            String localPath,
                            String remotePath,
                            boolean wifiOnly,
@@ -174,7 +179,29 @@ public class SyncedFolder implements Serializable, Cloneable {
         return this.chargingOnly;
     }
 
-    public boolean isExisting() {
+    /**
+     * Indicates whether the "Also upload existing files" option is enabled for this folder.
+     *
+     * <p>
+     * This flag controls how files in the folder are treated when auto-upload is enabled:
+     * <ul>
+     *     <li>If {@code true} (existing files are included):
+     *         <ul>
+     *             <li>All files in the folder, regardless of creation date, will be uploaded.</li>
+     *         </ul>
+     *     </li>
+     *     <li>If {@code false} (existing files are skipped):
+     *         <ul>
+     *             <li>Only files created or added after the folder was enabled will be uploaded.</li>
+     *             <li>Files that existed before enabling will be skipped, based on their creation time.</li>
+     *         </ul>
+     *     </li>
+     * </ul>
+     * </p>
+     *
+     * @return {@code true} if existing files should also be uploaded, {@code false} otherwise
+     */
+    public boolean alsoUploadExistingFiles() {
         return this.existing;
     }
 
@@ -274,11 +301,43 @@ public class SyncedFolder implements Serializable, Cloneable {
         this.excludeHidden = excludeHidden;
     }
 
-    public boolean containsFile(String filePath){
-        return filePath.contains(localPath);
+    /**
+     * Determines whether the given file:
+     * <ul>
+     *     <li>Exists under the configured {@code localPath}</li>
+     *     <li>Matches the expected media type of this folder</li>
+     * </ul>
+     *
+     * @param file the file to validate
+     * @param filePath the absolute path of the file e.g. /storage/emulated/0/DCIM/Camera/document.pdf
+     * @return {@code true} if the file is located under {@code localPath}
+     *         and matches the folder's media type; {@code false} otherwise
+     */
+    public boolean isFileInFolderWithCorrectMediaType(File file, String filePath) {
+        if (filePath == null || filePath.isEmpty() || localPath == null || localPath.isEmpty()) {
+            return false;
+        }
+
+        String normalizedLocal = localPath.endsWith(File.separator)
+            ? localPath
+            : localPath + File.separator;
+
+        boolean isInLocalDirectory = filePath.startsWith(normalizedLocal);
+
+        boolean isCorrectMediaType =
+            (getType() == MediaFolderType.IMAGE && MimeTypeUtil.isImage(file)) ||
+                (getType() == MediaFolderType.VIDEO && MimeTypeUtil.isVideo(file)) ||
+                getType() == MediaFolderType.CUSTOM;
+
+        return isInLocalDirectory && isCorrectMediaType;
     }
 
     public long getLastScanTimestampMs() { return lastScanTimestampMs; }
 
     public void setLastScanTimestampMs(long lastScanTimestampMs) { this.lastScanTimestampMs = lastScanTimestampMs; }
+
+    public long getTotalScanInterval(ConnectivityService connectivityService, PowerManagementService powerManagementService) {
+        final var calculatedScanInterval = SyncedFolderExtensionsKt.calculateScanInterval(this, connectivityService, powerManagementService);
+        return lastScanTimestampMs + calculatedScanInterval.getFirst();
+    }
 }

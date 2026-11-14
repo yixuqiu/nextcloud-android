@@ -6,6 +6,7 @@
  */
 package com.nextcloud.client.logger.ui
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -17,6 +18,7 @@ import com.nextcloud.client.logger.LogsRepository
 import com.owncloud.android.R
 import javax.inject.Inject
 
+@SuppressLint("StaticFieldLeak")
 class LogsViewModel @Inject constructor(
     private val context: Context,
     clock: Clock,
@@ -43,6 +45,12 @@ class LogsViewModel @Inject constructor(
     fun send() {
         entries.value?.let {
             sender.send(it)
+        }
+    }
+
+    fun export() {
+        entries.value?.let {
+            sender.export(it)
         }
     }
 
@@ -86,7 +94,6 @@ class LogsViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         sender.stop()
     }
 
@@ -101,6 +108,7 @@ class LogsViewModel @Inject constructor(
         val sizeKb = logsSize / KILOBYTE
         return when {
             isLoading.value == true -> context.getString(R.string.logs_status_loading)
+
             isFiltered -> context.getString(
                 R.string.logs_status_filtered,
                 sizeKb,
@@ -108,7 +116,9 @@ class LogsViewModel @Inject constructor(
                 allEntries.size,
                 filterDurationMs
             )
+
             !isFiltered -> context.getString(R.string.logs_status_not_filtered, sizeKb)
+
             else -> ""
         }
     }

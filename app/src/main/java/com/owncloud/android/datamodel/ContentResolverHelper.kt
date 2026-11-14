@@ -25,7 +25,6 @@ object ContentResolverHelper {
      */
     @JvmStatic
     @JvmOverloads
-    @Suppress("LongParameterList")
     fun queryResolver(
         contentResolver: ContentResolver,
         uri: Uri,
@@ -49,6 +48,7 @@ object ContentResolverHelper {
                 val queryArgs = getQueryArgsBundle(selection, sortColumn, sortDirection, limit)
                 contentResolver.query(uri, projection, queryArgs, cancellationSignal)
             }
+
             else -> {
                 val sortOrder = getSortOrderString(sortColumn, sortDirection, limit)
                 contentResolver.query(
@@ -83,22 +83,20 @@ object ContentResolverHelper {
         sortColumn: String?,
         sortDirection: String?,
         limit: Int?
-    ): Bundle {
-        return Bundle().apply {
-            if (selection != null) {
-                putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
+    ): Bundle = Bundle().apply {
+        if (selection != null) {
+            putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
+        }
+        if (sortColumn != null) {
+            putStringArray(ContentResolver.QUERY_ARG_SORT_COLUMNS, arrayOf(sortColumn))
+            val direction = when (sortDirection) {
+                SORT_DIRECTION_ASCENDING -> ContentResolver.QUERY_SORT_DIRECTION_ASCENDING
+                else -> ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
             }
-            if (sortColumn != null) {
-                putStringArray(ContentResolver.QUERY_ARG_SORT_COLUMNS, arrayOf(sortColumn))
-                val direction = when (sortDirection) {
-                    SORT_DIRECTION_ASCENDING -> ContentResolver.QUERY_SORT_DIRECTION_ASCENDING
-                    else -> ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
-                }
-                putInt(ContentResolver.QUERY_ARG_SORT_DIRECTION, direction)
-            }
-            if (limit != null) {
-                putInt(ContentResolver.QUERY_ARG_LIMIT, limit)
-            }
+            putInt(ContentResolver.QUERY_ARG_SORT_DIRECTION, direction)
+        }
+        if (limit != null) {
+            putInt(ContentResolver.QUERY_ARG_LIMIT, limit)
         }
     }
 }

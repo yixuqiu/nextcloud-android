@@ -15,9 +15,10 @@ import androidx.work.WorkerParameters
 import com.nextcloud.client.account.UserAccountManager
 import com.nextcloud.client.preferences.AppPreferences
 import com.owncloud.android.lib.common.utils.Log_OC
-import third_parties.sufficientlysecure.AndroidCalendar
-import third_parties.sufficientlysecure.SaveCalendar
+import thirdparties.sufficientlysecure.AndroidCalendar
+import thirdparties.sufficientlysecure.SaveCalendar
 import java.util.Calendar
+import kotlin.time.Duration.Companion.days
 
 class CalendarBackupWork(
     appContext: Context,
@@ -31,7 +32,7 @@ class CalendarBackupWork(
         val TAG = CalendarBackupWork::class.java.simpleName
         const val ACCOUNT = "account"
         const val FORCE = "force"
-        const val JOB_INTERVAL_MS: Long = 24 * 60 * 60 * 1000
+        val JOB_INTERVAL_MS = 1.days.inWholeMilliseconds
     }
 
     override fun doWork(): Result {

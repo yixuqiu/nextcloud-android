@@ -1,7 +1,7 @@
 /*
  * Nextcloud - Android Client
  *
- * SPDX-FileCopyrightText: 2024 Your Name <your@email.com>
+ * SPDX-FileCopyrightText: 2024 Alper Ozturk <alper.ozturk@nextcloud.com>
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
@@ -38,7 +38,7 @@ data class E2EFiles(
     fun deleteEncryptedTempFile() {
         if (encryptedTempFile != null) {
             val isTempEncryptedFileDeleted = encryptedTempFile?.delete()
-            Log_OC.e(tag, "isTempEncryptedFileDeleted: $isTempEncryptedFileDeleted")
+            Log_OC.d(tag, "isTempEncryptedFileDeleted: $isTempEncryptedFileDeleted")
         } else {
             Log_OC.e(tag, "Encrypted temp file cannot be found")
         }

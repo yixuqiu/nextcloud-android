@@ -4,24 +4,30 @@
 # SPDX-FileCopyrightText: 2024 Tobias Kaminsky <tobias@kaminsky.me>
 # SPDX-License-Identifier: AGPL-3.0-or-later OR GPL-2.0-only
 
-latestCommit=$(curl -s https://api.github.com/repos/nextcloud/android-library/commits/master | jq .sha | sed s'/\"//g')
-currentCommit=$(grep "androidLibraryVersion" build.gradle | cut -f2 -d'"')
-
 git fetch
 git checkout master
 git pull
 
-[[ $latestCommit == "$currentCommit" ]] && exit # nothing to do
+branchName=update-library-"$(date +%F)"
+latestCommit=$(curl -s https://api.github.com/repos/nextcloud/android-library/commits/master | jq .sha | sed s'/\"//g')
+currentCommit=$(grep "androidLibraryVersion ="  gradle/libs.versions.toml | cut -f2 -d'"')
+
+[[ $latestCommit == "$currentCommit" ]] && echo "Nothing to do. Commit is: $latestCommit" && exit # nothing to do
 
 git fetch
-git checkout -B update-library-"$(date +%F)" origin/master
+
+if git branch -a | grep -w $branchName ; then
+	echo "Branch $branchName already exists: exiting" && exit
+fi
+
+git checkout -B $branchName origin/master
  
-sed -i s"#androidLibraryVersion\ =.*#androidLibraryVersion =\"$latestCommit\"#" build.gradle
+sed -i s"#androidLibraryVersion\ =.*#androidLibraryVersion =\"$latestCommit\"#" gradle/libs.versions.toml
 ./gradlew --console=plain --dependency-verification lenient -q --write-verification-metadata sha256,pgp help
 
-git add build.gradle
+git add gradle/libs.versions.toml
 git add gradle/verification-metadata.xml
-git commit -s -m "Update library to $(date +%F)" 
+git commit -s -m "Update library to $(date +%F)" --no-verify
 
 git push -u origin HEAD
 gh pr create --fill

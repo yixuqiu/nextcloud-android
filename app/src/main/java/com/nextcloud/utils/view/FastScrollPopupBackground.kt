@@ -58,17 +58,11 @@ class FastScrollPopupBackground(context: Context, @ColorInt color: Int) : Drawab
         // noop
     }
 
-    override fun isAutoMirrored(): Boolean {
-        return true
-    }
+    override fun isAutoMirrored(): Boolean = true
 
-    override fun getOpacity(): Int {
-        return PixelFormat.TRANSPARENT
-    }
+    override fun getOpacity(): Int = PixelFormat.TRANSPARENT
 
-    private fun shouldMirrorPath(): Boolean {
-        return DrawableCompat.getLayoutDirection(this) == View.LAYOUT_DIRECTION_RTL
-    }
+    private fun shouldMirrorPath(): Boolean = DrawableCompat.getLayoutDirection(this) == View.LAYOUT_DIRECTION_RTL
 
     override fun onLayoutDirectionChanged(layoutDirection: Int): Boolean {
         updatePath()
@@ -127,7 +121,6 @@ class FastScrollPopupBackground(context: Context, @ColorInt color: Int) : Drawab
     }
 
     companion object {
-        @Suppress("LongParameterList")
         private fun pathArcTo(
             path: Path,
             centerX: Float,

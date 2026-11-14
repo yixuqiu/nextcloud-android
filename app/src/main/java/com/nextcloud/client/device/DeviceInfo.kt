@@ -12,11 +12,10 @@ import android.os.Build
 import java.util.Locale
 
 class DeviceInfo {
-    val vendor: String = Build.MANUFACTURER.toLowerCase(Locale.ROOT)
+    val vendor: String = Build.MANUFACTURER.lowercase(Locale.ROOT)
     val apiLevel: Int = Build.VERSION.SDK_INT
     val androidVersion = Build.VERSION.RELEASE
 
-    fun hasCamera(context: Context): Boolean {
-        return context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
-    }
+    fun hasCamera(context: Context): Boolean =
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
 }

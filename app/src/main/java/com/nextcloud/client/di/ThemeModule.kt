@@ -10,7 +10,6 @@ package com.nextcloud.client.di
 import com.nextcloud.android.common.ui.theme.MaterialSchemes
 import com.owncloud.android.utils.theme.MaterialSchemesProvider
 import com.owncloud.android.utils.theme.MaterialSchemesProviderImpl
-import com.owncloud.android.utils.theme.ThemeColorUtils
 import com.owncloud.android.utils.theme.ThemeUtils
 import dagger.Binds
 import dagger.Module
@@ -27,19 +26,10 @@ internal abstract class ThemeModule {
 
         @Provides
         @Singleton
-        fun themeColorUtils(): ThemeColorUtils {
-            return ThemeColorUtils()
-        }
+        fun themeUtils(): ThemeUtils = ThemeUtils()
 
         @Provides
-        @Singleton
-        fun themeUtils(): ThemeUtils {
-            return ThemeUtils()
-        }
-
-        @Provides
-        fun provideMaterialSchemes(materialSchemesProvider: MaterialSchemesProvider): MaterialSchemes {
-            return materialSchemesProvider.getMaterialSchemesForCurrentUser()
-        }
+        fun provideMaterialSchemes(materialSchemesProvider: MaterialSchemesProvider): MaterialSchemes =
+            materialSchemesProvider.getMaterialSchemesForCurrentUser()
     }
 }

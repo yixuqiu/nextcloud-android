@@ -11,10 +11,9 @@ import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.nextcloud.client.jobs.download.FileDownloadWorker
+import com.nextcloud.client.database.NextcloudDatabase
 import com.nextcloud.client.jobs.upload.FileUploadHelper
-import com.nextcloud.client.network.Connectivity
-import com.nextcloud.client.network.ConnectivityService
+import com.nextcloud.client.network.ConnectivityManagerFactory
 import com.nextcloud.utils.EditorUtils
 import com.owncloud.android.R
 import com.owncloud.android.databinding.TestLayoutBinding
@@ -41,19 +40,7 @@ class TestActivity :
     private lateinit var fileOperation: FileOperationsHelper
     private lateinit var binding: TestLayoutBinding
 
-    val connectivityServiceMock: ConnectivityService = object : ConnectivityService {
-        override fun isConnected(): Boolean {
-            return false
-        }
-
-        override fun isInternetWalled(): Boolean {
-            return false
-        }
-
-        override fun getConnectivity(): Connectivity {
-            return Connectivity.CONNECTED_WIFI
-        }
-    }
+    val connectivityServiceMock = ConnectivityManagerFactory.mock
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,9 +83,7 @@ class TestActivity :
         TODO("Not yet implemented")
     }
 
-    override fun getOperationsServiceBinder(): OperationsService.OperationsServiceBinder? {
-        return null
-    }
+    override fun getOperationsServiceBinder(): OperationsService.OperationsServiceBinder? = null
 
     override fun showSortListGroup(show: Boolean) {
         // not needed
@@ -112,13 +97,7 @@ class TestActivity :
         TODO("Not yet implemented")
     }
 
-    override fun getFileUploaderHelper(): FileUploadHelper {
-        return FileUploadHelper.instance()
-    }
-
-    override fun getFileDownloadProgressListener(): FileDownloadWorker.FileDownloadProgressListener? {
-        return null
-    }
+    override fun getFileUploaderHelper(): FileUploadHelper = FileUploadHelper.instance()
 
     override fun getStorageManager(): FileDataStorageManager {
         if (!this::storage.isInitialized) {
@@ -141,7 +120,9 @@ class TestActivity :
                 userAccountManager,
                 connectivityServiceMock,
                 EditorUtils(
-                    ArbitraryDataProviderImpl(baseContext)
+                    ArbitraryDataProviderImpl(
+                        NextcloudDatabase.getInstance(baseContext).arbitraryDataDao()
+                    )
                 )
             )
         }

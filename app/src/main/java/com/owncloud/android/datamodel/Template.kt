@@ -14,15 +14,13 @@ import kotlinx.parcelize.Parcelize
  * Template for creating a file from it via RichDocuments app
  */
 @Parcelize
-data class Template(
-    val id: Long,
-    val name: String,
-    val thumbnailLink: String,
-    val type: Type,
-    val extension: String
-) : Parcelable {
+data class Template(val id: Long, val name: String, val thumbnailLink: String, val type: Type, val extension: String) :
+    Parcelable {
     enum class Type {
-        DOCUMENT, SPREADSHEET, PRESENTATION, UNKNOWN;
+        DOCUMENT,
+        SPREADSHEET,
+        PRESENTATION,
+        UNKNOWN;
 
         companion object {
             @JvmStatic

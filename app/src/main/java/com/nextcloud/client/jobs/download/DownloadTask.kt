@@ -45,9 +45,7 @@ class DownloadTask(
         private val clientProvider: () -> OwnCloudClient,
         private val contentResolver: ContentResolver
     ) {
-        fun create(): DownloadTask {
-            return DownloadTask(context, contentResolver, clientProvider)
-        }
+        fun create(): DownloadTask = DownloadTask(context, contentResolver, clientProvider)
     }
 
     // Unused progress, isCancelled arguments needed for TransferManagerTest
@@ -76,8 +74,8 @@ class DownloadTask(
             lastSyncDateForProperties = syncDate
             lastSyncDateForData = syncDate
             isUpdateThumbnailNeeded = true
-            modificationTimestamp = op.modificationTimestamp
-            modificationTimestampAtLastSyncForData = op.modificationTimestamp
+            modificationTimestamp = op.getModificationTimestamp()
+            modificationTimestampAtLastSyncForData = op.getModificationTimestamp()
             etag = op.etag
             mimeType = op.mimeType
             storagePath = op.savePath

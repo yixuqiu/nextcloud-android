@@ -29,25 +29,22 @@ data class LogEntry(val timestamp: Date, val level: Level, val tag: String, val 
          */
         private val ENTRY_PARSE_REGEXP = Regex(
             pattern =
-            """(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z);([ADEIVW]);([^;]+);(.*)"""
+                """(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z);([ADEIVW]);([^;]+);(.*)"""
         )
 
         @JvmStatic
-        fun buildDateFormat(tz: TimeZone? = null): SimpleDateFormat {
-            return if (tz == null) {
-                SimpleDateFormat(UTC_DATE_FORMAT, Locale.US).apply {
-                    timeZone = TIME_ZONE
-                    isLenient = false
-                }
-            } else {
-                SimpleDateFormat(TZ_DATE_FORMAT, Locale.US).apply {
-                    timeZone = tz
-                    isLenient = false
-                }
+        fun buildDateFormat(tz: TimeZone? = null): SimpleDateFormat = if (tz == null) {
+            SimpleDateFormat(UTC_DATE_FORMAT, Locale.US).apply {
+                timeZone = TIME_ZONE
+                isLenient = false
+            }
+        } else {
+            SimpleDateFormat(TZ_DATE_FORMAT, Locale.US).apply {
+                timeZone = tz
+                isLenient = false
             }
         }
 
-        @Suppress("ReturnCount")
         @JvmStatic
         fun parse(s: String): LogEntry? {
             val result = ENTRY_PARSE_REGEXP.matchEntire(s) ?: return null

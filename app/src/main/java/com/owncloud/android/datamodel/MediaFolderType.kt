@@ -12,7 +12,9 @@ import android.util.SparseArray
  * Types of media folder.
  */
 enum class MediaFolderType(@JvmField val id: Int) {
-    CUSTOM(0), IMAGE(1), VIDEO(2);
+    CUSTOM(0),
+    IMAGE(1),
+    VIDEO(2);
 
     companion object {
         private val reverseMap = SparseArray<MediaFolderType>(3)
@@ -24,8 +26,6 @@ enum class MediaFolderType(@JvmField val id: Int) {
         }
 
         @JvmStatic
-        fun getById(id: Int?): MediaFolderType {
-            return reverseMap[id!!]
-        }
+        fun getById(id: Int?): MediaFolderType = reverseMap[id!!]
     }
 }

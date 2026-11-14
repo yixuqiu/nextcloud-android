@@ -42,7 +42,6 @@ object UriUtils {
         return displayName?.replace("/".toRegex(), "-")
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun getDisplayNameFromContentResolver(uri: Uri, context: Context): String? {
         val mimeType = context.contentResolver.getType(uri) ?: return null
         val displayNameColumn: String = getDisplayNameColumnForMimeType(mimeType)
@@ -71,12 +70,15 @@ object UriUtils {
         MimeTypeUtil.isImage(mimeType) -> {
             MediaStore.Images.ImageColumns.DISPLAY_NAME
         }
+
         MimeTypeUtil.isVideo(mimeType) -> {
             MediaStore.Video.VideoColumns.DISPLAY_NAME
         }
+
         MimeTypeUtil.isAudio(mimeType) -> {
             MediaStore.Audio.AudioColumns.DISPLAY_NAME
         }
+
         else -> {
             MediaStore.Files.FileColumns.DISPLAY_NAME
         }
